@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  posts     Post[]
+  favorites Favorite[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  date      DateTime
+  score     Int
+  category  String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+  comments  Comment[]
+  media     Media[]
+  favorites Favorite[]
+  @@index([title], name: "postTitleIndex")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  date      DateTime
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  parent    Comment? @relation("CommentToComment", fields: [parentId], references: [id])
+  parentId  Int?
+  replies   Comment[] @relation("CommentToComment")
+}
+
+model Media {
+  id     Int    @id @default(autoincrement())
+  type   String
+  url    String
+  post   Post   @relation(fields: [postId], references: [id])
+  postId Int
+}
+
+model Favorite {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+  post   Post @relation(fields: [postId], references: [id])
+  postId Int
+}
