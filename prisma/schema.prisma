@@ -9,9 +9,15 @@ datasource db {
 
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
+  id                    Int      @id @default(autoincrement())
+  firstName             String?
+  lastName              String?
+  email                 String?    @unique
+  hashedPassword        String?
+  phoneNumber           String?
+  activationToken       String?   // existing field
+  isActivated           Boolean   @default(false) // existing field
+  activationTokenExpires DateTime? // new field
   posts     Post[]
   favorites Favorite[]
 }
