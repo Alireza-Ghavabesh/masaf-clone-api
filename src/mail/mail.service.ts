@@ -1,17 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { SentMessageInfo } from 'nodemailer/lib/smtp-transport';
+import { AppService } from 'src/app.service';
+
 
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter<SentMessageInfo>;
 
-  constructor() {
+  constructor(private appService: AppService) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: 'jacobmarcosoliver@gmail.com',
-        pass: 'xszo xvgn oeaf ttrp',
+        pass: appService.getGmailPasswordForSendEmail(),
       },
     });
   }

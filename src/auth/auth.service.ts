@@ -33,7 +33,7 @@ export class AuthService {
           email: email,
           hashedPassword: hashedPassword,
           activationToken: token,
-          activationTokenExpires: tokenExpires,
+          activationTokenExpireDate: tokenExpires,
         },
       });
 
@@ -76,7 +76,7 @@ export class AuthService {
         }
 
         if (!user.isActivated) {
-          if (user.activationTokenExpires > new Date()) {
+          if (user.activationTokenExpireDate > new Date()) {
             throw new Error('activateTokenStillValid');
           } else {
             const token = uuidv4();
@@ -118,7 +118,7 @@ export class AuthService {
 
     if (user) {
       // Check if the token has expired
-      if (user.activationTokenExpires > new Date()) {
+      if (user.activationTokenExpireDate > new Date()) {
         // Token is valid and not expired, activate the account and clear the activation token
         await this.prisma.user.update({
           where: {
@@ -127,7 +127,7 @@ export class AuthService {
           data: {
             isActivated: true,
             activationToken: null,
-            activationTokenExpires: null,
+            activationTokenExpireDate: null,
           },
         });
 

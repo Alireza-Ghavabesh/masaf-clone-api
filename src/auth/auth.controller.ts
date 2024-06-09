@@ -30,7 +30,7 @@ export class AuthController {
         loginMethod,
         phoneNumber,
       );
-
+      
       return {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
