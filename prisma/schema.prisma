@@ -14,64 +14,93 @@ model User {
   email                     String?    @unique
   hashedPassword            String?
   phoneNumber               String?
-  activationToken           String? // existing field
-  isActivated               Boolean    @default(false) // existing field
-  activationTokenExpireDate DateTime? // new field
+  activationToken           String?
+  isActivated               Boolean    @default(false)
+  activationTokenExpireDate DateTime?
+  isAdmin                   Boolean    @default(false)
+  profileImageUrl           String?
   posts                     Post[]
+  comments                  Comment[]
   favorites                 Favorite[]
   likes                     Like[]
-  isAdmin                   Boolean    @default(false)
+  views                     View[] // Add this field for tracking views
 }
 
 model Post {
-  id        Int        @id @default(autoincrement())
-  title     String
-  content   String
-  date      DateTime
-  score     Int
-  category  String
-  author    User       @relation(fields: [authorId], references: [id])
-  authorId  Int
-  comments  Comment[]
-  media     Media[]
-  favorites Favorite[]
-  likes     Like[]
-
-  @@index([title], name: "postTitleIndex")
-}
-
-model Like {
-  id     Int  @id @default(autoincrement())
-  user   User @relation(fields: [userId], references: [id])
-  userId Int
-  post   Post @relation(fields: [postId], references: [id])
-  postId Int
-  value  Int   @default(0) // +1 for like, -1 for dislike
+  id         Int        @id @default(autoincrement())
+  title      String
+  content    String
+  date       DateTime
+  jalaliDate String
+  score      Int
+  category   String
+  comments   Comment[]
+  videos     Video[]
+  images     Image[]
+  favorites  Favorite[]
+  likes      Like[]
+  views      View[] // Add this field to track views
+  User       User?      @relation(fields: [userId], references: [id])
+  userId     Int?
 }
 
 model Comment {
-  id       Int       @id @default(autoincrement())
-  text     String
-  date     DateTime
-  post     Post      @relation(fields: [postId], references: [id])
-  postId   Int
-  parent   Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
-  parentId Int?
-  replies  Comment[] @relation("CommentToComment")
+  id        Int       @id @default(autoincrement())
+  text      String
+  date      DateTime
+  user      User?     @relation(fields: [userId], references: [id])
+  userId    Int?
+  post      Post?     @relation(fields: [postId], references: [id])
+  postId    Int?
+  replyTo   Comment?  @relation("ReplyToComment", fields: [replyToId], references: [id])
+  replyToId Int?
+  replies   Comment[] @relation("ReplyToComment")
 }
 
-model Media {
-  id     Int    @id @default(autoincrement())
-  type   String // image or audio or video (base on type i will correspond style for it in front :D)
-  url    String
-  post   Post   @relation(fields: [postId], references: [id])
-  postId Int
+model Video {
+  id        Int     @id @default(autoincrement())
+  thumbnail String?
+  url       String
+  post      Post?   @relation(fields: [postId], references: [id])
+  postId    Int?
+  audios    Audio[]
+}
+
+model Audio {
+  id      Int    @id @default(autoincrement())
+  url     String
+  video   Video? @relation(fields: [videoId], references: [id])
+  videoId Int?
 }
 
 model Favorite {
-  id     Int  @id @default(autoincrement())
-  user   User @relation(fields: [userId], references: [id])
-  userId Int
-  post   Post @relation(fields: [postId], references: [id])
-  postId Int
+  id     Int   @id @default(autoincrement())
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?
+  post   Post? @relation(fields: [postId], references: [id])
+  postId Int?
+}
+
+model Image {
+  id     Int    @id @default(autoincrement())
+  url    String
+  post   Post?  @relation(fields: [postId], references: [id])
+  postId Int?
+}
+
+model Like {
+  id     Int   @id @default(autoincrement())
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?
+  post   Post? @relation(fields: [postId], references: [id])
+  postId Int?
+}
+
+model View {
+  id     Int   @id @default(autoincrement())
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?
+  post   Post? @relation(fields: [postId], references: [id])
+  postId Int?
+  // You can add additional fields like timestamp or IP address if needed
 }

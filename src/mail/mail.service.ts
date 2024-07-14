@@ -23,10 +23,10 @@ export class MailService {
       from: 'jacobmarcosoliver@gmail.com',
       to: email,
       subject: 'لینک فعال سازی حساب کاربری',
-      text: `فعال سازی حساب کاربری: http://localhost:5000/api/auth/activate/${token}`,
+      text: `فعال سازی حساب کاربری: http://localhost:8000/api/auth/activate/${token}`,
       html: `<b>به مصاف خوش آمدید</b><br>
       با کلیک بر روی لینک حساب خود را فعال کنید
-      <a href="http://localhost:5000/api/auth/activate/${token}">Activate</a>
+      <a href="http://localhost:8000/api/auth/activate/${token}">Activate</a>
       `,
     });
   }

@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { MailService } from 'src/mail/mail.service';
-import axios from 'axios';
+import { Injectable } from "@nestjs/common";
+import * as bcrypt from "bcrypt";
+import { v4 as uuidv4 } from "uuid";
+import { PrismaService } from "src/prisma/prisma.service";
+import { MailService } from "src/mail/mail.service";
+import axios from "axios";
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private mailService: MailService,
+    private mailService: MailService
   ) {}
 
   async register(
@@ -19,8 +19,9 @@ export class AuthService {
     password: string,
     loginMethod: string,
     phoneNumber: string,
+    isAdmin: boolean
   ) {
-    if (loginMethod === 'userpass') {
+    if (loginMethod === "userpass") {
       const token = uuidv4();
       const tokenExpires = new Date();
       tokenExpires.setHours(tokenExpires.getHours() + 24);
@@ -32,8 +33,10 @@ export class AuthService {
           lastName: lastName,
           email: email,
           hashedPassword: hashedPassword,
-          activationToken: token,
-          activationTokenExpireDate: tokenExpires,
+          activationToken: token, // to give user for verify from email
+          activationTokenExpireDate: tokenExpires, // for check token is still expire
+          isActivated: false,
+          isAdmin: isAdmin,
         },
       });
 
@@ -46,7 +49,11 @@ export class AuthService {
       tokenExpires.setHours(tokenExpires.getHours() + 24);
       const newUser = await this.prisma.user.create({
         data: {
+          isActivated: false,
           phoneNumber: phoneNumber,
+          isAdmin: false,
+          activationToken: token, // to give user for verify from email
+          activationTokenExpireDate: tokenExpires, // for check token is still expire
         },
       });
 
@@ -60,9 +67,12 @@ export class AuthService {
     email: string,
     password: string,
     loginMethod: string,
-    phoneNumber: string,
+    phoneNumber: string
   ) {
-    if (loginMethod === 'userpass') {
+    console.log(
+      `password: ${password} & email:${email} & loginMethod:${loginMethod}`
+    );
+    if (loginMethod === "userpass") {
       const user = await this.prisma.user.findFirst({
         where: {
           email: email,
@@ -70,24 +80,25 @@ export class AuthService {
       });
 
       if (user) {
+        console.log(`email:${email} & password:${password}`);
         const passIsOK = await bcrypt.compare(password, user.hashedPassword);
         if (!passIsOK) {
-          throw new Error('WrongPassword');
+          throw new Error("WrongPassword");
         }
 
         if (!user.isActivated) {
           if (user.activationTokenExpireDate > new Date()) {
-            throw new Error('activateTokenStillValid');
+            throw new Error("activateTokenStillValid");
           } else {
             const token = uuidv4();
             await this.mailService.sendMail(email, token);
-            throw new Error('notActivated');
+            throw new Error("notActivated");
           }
         }
 
         return user;
       } else {
-        throw new Error('userNotFound');
+        throw new Error("userNotFound");
       }
     } else {
       const user = await this.prisma.user.findFirst({
@@ -99,13 +110,13 @@ export class AuthService {
       if (user) {
         // send code to phone number
         axios.request({
-          method: 'GET',
+          method: "GET",
           url: `https://api.kavenegar.com/v1/{API-KEY}/verify/lookup.json?receptor=09361234567&token=852596&template=myverification`,
         });
 
         return user;
       } else {
-        throw new Error('userNotFound');
+        throw new Error("userNotFound");
       }
     }
   }
@@ -131,14 +142,14 @@ export class AuthService {
           },
         });
 
-        return 'Account activated successfully';
+        return "Account activated successfully";
       } else {
         // Token has expired
-        throw new Error('Activation link has expired');
+        throw new Error("Activation link has expired");
       }
     } else {
       // No user found with this activation token
-      throw new Error('Invalid activation link');
+      throw new Error("Invalid activation link");
     }
   }
 }

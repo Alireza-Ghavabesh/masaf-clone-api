@@ -4,24 +4,35 @@ import {
   Body,
   HttpException,
   HttpStatus,
-} from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { Get, Param } from '@nestjs/common';
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import { Get, Param } from "@nestjs/common";
 
-@Controller('api/auth')
+@Controller("api/auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
+  @Post("register")
   async register(
-    @Body('firstName') firstName: string,
-    @Body('lastName') lastName: string,
-    @Body('email') email: string,
-    @Body('password') password: string,
-    @Body('phoneNumber') phoneNumber: string,
-    @Body('loginMethod') loginMethod: string,
+    @Body("firstName") firstName: string,
+    @Body("lastName") lastName: string,
+    @Body("email") email: string,
+    @Body("password") password: string,
+    @Body("phoneNumber") phoneNumber: string,
+    @Body("loginMethod") loginMethod: string,
+    @Body("isAdmin") isAdmin: boolean
   ) {
+    console.log(firstName);
     try {
+      console.log(
+        firstName,
+        lastName,
+        email,
+        password,
+        loginMethod,
+        phoneNumber,
+        isAdmin
+      );
       const newUser = await this.authService.register(
         firstName,
         lastName,
@@ -29,36 +40,37 @@ export class AuthController {
         password,
         loginMethod,
         phoneNumber,
+        isAdmin
       );
-      
+
       return {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
-        status: 'OK',
+        status: "OK",
       };
     } catch (error) {
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         throw new HttpException(
-          'A user with this email already exists.',
-          HttpStatus.BAD_REQUEST,
+          "A user with this email already exists.",
+          HttpStatus.BAD_REQUEST
         );
       } else {
         console.log(error);
         throw new HttpException(
-          'An error occurred while processing your request.',
-          HttpStatus.INTERNAL_SERVER_ERROR,
+          "An error occurred while processing your request.",
+          HttpStatus.INTERNAL_SERVER_ERROR
         );
       }
     }
   }
 
-  @Get('activate/:token')
-  async activate(@Param('token') token: string) {
+  @Get("activate/:token")
+  async activate(@Param("token") token: string) {
     try {
       const message = await this.authService.activate(token);
       return {
-        status: 'OK',
+        status: "OK",
         message: message,
       };
     } catch (error) {
@@ -66,19 +78,19 @@ export class AuthController {
     }
   }
 
-  @Post('login')
+  @Post("login")
   async login(@Body() body) {
     const { email, password, loginMethod, phoneNumber } = body;
     try {
       const user = await this.authService.login(
         email,
         password,
-        phoneNumber,
         loginMethod,
+        phoneNumber
       );
       return {
-        result: 'loginOk',
-        message: 'user logged in successfully',
+        result: "loginOk",
+        message: "user logged in successfully",
         data: {
           id: user.id,
           firstName: user.firstName,
@@ -88,31 +100,25 @@ export class AuthController {
       };
     } catch (error) {
       switch (error.message) {
-        case 'WrongPassword':
+        case "WrongPassword":
+          throw new HttpException("WrongPassword", HttpStatus.BAD_REQUEST);
+        case "notActivated":
           throw new HttpException(
-            'password is incorrect.',
-            HttpStatus.BAD_REQUEST,
+            "notActivated",
+            HttpStatus.INTERNAL_SERVER_ERROR
           );
-        case 'notActivated':
+        case "activateTokenStillValid":
           throw new HttpException(
-            'user is not activated.',
-            HttpStatus.INTERNAL_SERVER_ERROR,
+            "activateTokenStillValid",
+            HttpStatus.INTERNAL_SERVER_ERROR
           );
-        case 'activateTokenStillValid':
+        case "userNotFound":
           throw new HttpException(
-            'activation token is still valid',
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
-        case 'userNotFound':
-          throw new HttpException(
-            'user not found',
-            HttpStatus.INTERNAL_SERVER_ERROR,
+            "userNotFound",
+            HttpStatus.INTERNAL_SERVER_ERROR
           );
         default:
-          throw new HttpException(
-            'An error occurred while processing your request.',
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
+          throw new HttpException("unknown", HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
   }
