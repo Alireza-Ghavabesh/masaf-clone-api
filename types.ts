@@ -1,4 +1,4 @@
-import { IsString, IsArray, ValidateNested, IsOptional } from "class-validator";
+import { IsString, IsArray, ValidateNested, IsOptional, IsNumber } from "class-validator";
 import { Type } from "class-transformer";
 import { IsFile } from "nestjs-form-data";
 
@@ -44,7 +44,6 @@ export class ComplexFormDataDto {
 }
 
 export class getPostFormDataDto {
-  
   @IsOptional()
   @IsArray()
   categories: string;
@@ -76,4 +75,30 @@ export class getPostFormDataDto {
   @IsOptional()
   @IsString()
   withVideos: string;
+
+  @IsOptional()
+  @IsString()
+  withImages: string;
+}
+
+
+export class singlePostFormData {
+  @IsString()
+  postId: string;
+}
+
+export class createCommentFormData {
+  @IsString()
+  postId: string;
+
+  @IsString()
+  @IsOptional()
+  parentId: string;
+
+  @IsString()
+  text: string;
+
+  @IsString()
+  userId: string;
+  
 }

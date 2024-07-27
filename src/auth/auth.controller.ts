@@ -22,7 +22,7 @@ export class AuthController {
     @Body("loginMethod") loginMethod: string,
     @Body("isAdmin") isAdmin: boolean
   ) {
-    console.log(firstName);
+    console.log(Body());
     try {
       console.log(
         firstName,

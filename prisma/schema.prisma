@@ -24,6 +24,7 @@ model User {
   favorites                 Favorite[]
   likes                     Like[]
   views                     View[] // Add this field for tracking views
+  llikes                    LLike[]
 }
 
 model Post {
@@ -45,16 +46,31 @@ model Post {
 }
 
 model Comment {
-  id        Int       @id @default(autoincrement())
-  text      String
-  date      DateTime
-  user      User?     @relation(fields: [userId], references: [id])
-  userId    Int?
-  post      Post?     @relation(fields: [postId], references: [id])
-  postId    Int?
-  replyTo   Comment?  @relation("ReplyToComment", fields: [replyToId], references: [id])
-  replyToId Int?
-  replies   Comment[] @relation("ReplyToComment")
+  id     Int      @id @default(autoincrement())
+  text   String
+  date   DateTime
+  user   User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int?
+  post   Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId Int?
+
+  parent   Comment?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children Comment[] @relation("ParentChild")
+  parentId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Llike     LLike[]
+}
+
+model LLike {
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  userId    Int
+  commentId Int
+
+  @@id([userId, commentId])
 }
 
 model Video {

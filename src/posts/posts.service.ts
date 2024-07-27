@@ -5,6 +5,8 @@ import {
   ComplexFormDataDto,
   deletePostFormData,
   getPostFormDataDto,
+  singlePostFormData,
+  createCommentFormData,
 } from "types";
 import { v4 as uuidv4 } from "uuid";
 const path = require("path");
@@ -13,6 +15,89 @@ const fs = require("fs");
 @Injectable()
 export class PostsService {
   constructor(private prisma: PrismaService) {}
+
+  async createComment(formData: createCommentFormData): Promise<{}> {
+    const parentId = formData.parentId ? parseInt(formData.parentId) : null;
+    let u = {};
+    let c = {};
+    await this.prisma.$transaction(async (tx) => {
+      const comment = await tx.comment.create({
+        data: {
+          text: formData.text,
+          postId: parseInt(formData.postId),
+          parentId: parentId,
+          date: new Date(),
+          userId: parseInt(formData.userId),
+        },
+      });
+      const user = await tx.user.findUnique({
+        where: {
+          id: parseInt(formData.userId),
+        },
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      });
+      (u = user), (c = comment);
+    });
+    return {
+      user: u,
+      ...c,
+    };
+  }
+
+  async getSinglePost(formData: singlePostFormData): Promise<{}> {
+    const post = await this.prisma.post.findUnique({
+      where: {
+        id: parseInt(formData.postId),
+      },
+      include: {
+        videos: {
+          include: {
+            audios: true,
+          },
+        },
+        comments: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          select: {
+            id: true,
+            text: true,
+            parentId: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        favorites: {},
+        images: {},
+        likes: {},
+        User: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            likes: true,
+            llikes: true,
+          },
+        },
+      },
+    });
+    return post;
+  }
+
+  async getAllPosts(): Promise<{}> {
+    const posts = this.prisma.post.findMany();
+    return posts;
+  }
 
   async createPost(formData: ComplexFormDataDto): Promise<string> {
     try {
@@ -30,7 +115,7 @@ export class PostsService {
   }
 
   async deletePost(formData: deletePostFormData): Promise<{}> {
-    console.log(parseInt(formData.postId))
+    console.log(parseInt(formData.postId));
     try {
       const post = await this.prisma.post.delete({
         where: {
@@ -42,12 +127,12 @@ export class PostsService {
           comments: {},
           favorites: {},
           likes: {},
-        }
+        },
       });
-      console.log(post)
+      console.log(post);
       return post;
     } catch (err) {
-      console.log(err)
+      console.log(err);
       return err;
     }
   }
@@ -114,6 +199,15 @@ export class PostsService {
       };
     }
 
+    if (formData.withImages) {
+      condition["include"] = {
+        ...condition["include"],
+        images: {},
+      };
+    }
+
+    console.log(condition);
+
     const posts = await this.prisma.post.findMany(condition);
 
     // Process the posts as needed
@@ -147,7 +241,7 @@ export class PostsService {
     formData: ComplexFormDataDto
   ): Promise<string> {
     try {
-      console.log(parseInt(formData.userid))
+      console.log(parseInt(formData.userid));
       // Start a transaction
       await this.prisma.$transaction(async (tx) => {
         // Create the Post
