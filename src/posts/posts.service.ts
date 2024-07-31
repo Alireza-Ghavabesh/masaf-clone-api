@@ -7,6 +7,9 @@ import {
   getPostFormDataDto,
   singlePostFormData,
   createCommentFormData,
+  updateCommentFormData,
+  deleteCommentFormData,
+  toggleCommentLikeFormData,
 } from "types";
 import { v4 as uuidv4 } from "uuid";
 const path = require("path");
@@ -35,63 +38,202 @@ export class PostsService {
           id: parseInt(formData.userId),
         },
         select: {
+          id: true,
           firstName: true,
           lastName: true,
         },
       });
       (u = user), (c = comment);
     });
+
     return {
-      user: u,
       ...c,
+      user: u,
+      likeCount: 0,
+      likedByMe: false,
     };
   }
 
-  async getSinglePost(formData: singlePostFormData): Promise<{}> {
-    const post = await this.prisma.post.findUnique({
-      where: {
-        id: parseInt(formData.postId),
-      },
-      include: {
-        videos: {
-          include: {
-            audios: true,
-          },
+  async updateComment(formData: updateCommentFormData): Promise<{}> {
+    let cmnt = {};
+    await this.prisma.$transaction(async (tx) => {
+      const { userId } = await tx.comment.findUnique({
+        where: {
+          id: parseInt(formData.commentId),
         },
-        comments: {
-          orderBy: {
-            createdAt: "desc",
+        select: {
+          userId: true,
+        },
+      });
+
+      if (userId !== parseInt(formData.userId)) {
+        return {
+          message: "You do not have permission to edit this comment",
+          status: "badPremission",
+        };
+      }
+
+      const comment = await tx.comment.update({
+        where: { id: parseInt(formData.commentId) },
+        data: { text: formData.text },
+        select: { text: true },
+      });
+      cmnt = comment;
+    });
+    return cmnt;
+  }
+
+  async deleteComment(formData: deleteCommentFormData): Promise<{}> {
+    let cmnt = {};
+    await this.prisma.$transaction(async (tx) => {
+      const { userId } = await tx.comment.findUnique({
+        where: {
+          id: parseInt(formData.commentId),
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      if (userId !== parseInt(formData.userId)) {
+        return {
+          message: "You do not have permission to delete this comment",
+          status: "badPremission",
+        };
+      }
+
+      const comment = await tx.comment.delete({
+        where: { id: parseInt(formData.commentId) },
+        select: { id: true },
+      });
+      cmnt = comment;
+    });
+    return cmnt;
+  }
+
+  async toggleCommentLike(formData: toggleCommentLikeFormData): Promise<{}> {
+    let result = {};
+    let userId: number;
+    if(formData.userId === 'undefined'){
+      userId = 0
+    }else{
+      userId = parseInt(formData.userId)
+    }
+    const data = {
+      userId: userId,
+      commentId: parseInt(formData.commentId),
+    };
+
+    await this.prisma.$transaction(async (tx) => {
+      const commentLike = await tx.lLike.findUnique({
+        where: {
+          userId_commentId: data,
+        },
+      });
+
+      if (commentLike == null) {
+        await tx.lLike.create({ data: data });
+        result = {
+          addLike: true,
+        };
+      } else {
+        await tx.lLike.delete({
+          where: {
+            userId_commentId: data,
           },
-          select: {
-            id: true,
-            text: true,
-            parentId: true,
-            createdAt: true,
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
+        });
+        result = {
+          addLike: false,
+        };
+      }
+    });
+    return result;
+  }
+
+  async getSinglePost(formData: singlePostFormData): Promise<{}> {
+    let userId: number;
+    if (formData.userId === "undefined") {
+      userId = 0;
+    } else {
+      userId = parseInt(formData.userId);
+    }
+
+    let postWithLikesAndComments = {};
+    await this.prisma.$transaction(async (tx) => {
+      const post = await tx.post.findUnique({
+        where: {
+          id: parseInt(formData.postId),
+        },
+        include: {
+          videos: {
+            include: {
+              audios: true,
+            },
+          },
+          comments: {
+            orderBy: {
+              createdAt: "desc",
+            },
+            select: {
+              id: true,
+              text: true,
+              parentId: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+              _count: {
+                select: {
+                  Llike: true,
+                },
               },
             },
           },
-        },
-        favorites: {},
-        images: {},
-        likes: {},
-        User: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            likes: true,
-            llikes: true,
+          favorites: {},
+          images: {},
+          likes: {},
+          User: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              likes: true,
+              llikes: true,
+            },
           },
         },
-      },
+      });
+
+      const commentLikes = await tx.lLike.findMany({
+        where: {
+          userId: userId,
+          commentId: {
+            in: post.comments.map((comment) => comment.id),
+          },
+        },
+      });
+
+      postWithLikesAndComments = {
+        ...post,
+        comments: post.comments.map((comment) => {
+          const { _count, ...commentFields } = comment;
+          return {
+            ...commentFields,
+            likedByMe: commentLikes.find(
+              (commentLike) => commentLike.commentId === comment.id
+            ),
+            likeCount: _count.Llike,
+          };
+        }),
+      };
     });
-    return post;
+
+    return postWithLikesAndComments;
   }
 
   async getAllPosts(): Promise<{}> {

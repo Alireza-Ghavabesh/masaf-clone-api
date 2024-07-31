@@ -1,5 +1,14 @@
 import { Controller, Post, Body, Query } from "@nestjs/common";
-import { ComplexFormDataDto, getPostFormDataDto, deletePostFormData, singlePostFormData, createCommentFormData} from "types"; // Import your DTO
+import {
+  ComplexFormDataDto,
+  getPostFormDataDto,
+  deletePostFormData,
+  singlePostFormData,
+  createCommentFormData,
+  updateCommentFormData,
+  deleteCommentFormData,
+  toggleCommentLikeFormData,
+} from "types"; // Import your DTO
 
 import { FormDataRequest } from "nestjs-form-data";
 import { PostsService } from "./posts.service";
@@ -24,34 +33,54 @@ export class PostsController {
     return posts;
   }
 
-
-  @Post('deletePost')
+  @Post("deletePost")
   @FormDataRequest()
-  async deletePost(@Body() formData: deletePostFormData): Promise<{}>{
-    console.log(formData)
+  async deletePost(@Body() formData: deletePostFormData): Promise<{}> {
+    console.log(formData);
     const post = await this.postService.deletePost(formData);
     return post;
   }
 
-  @Post('singlePost')
+  @Post("singlePost")
   @FormDataRequest()
   async getSinglePost(@Body() formData: singlePostFormData): Promise<{}> {
-      const post = await this.postService.getSinglePost(formData);
-      return post;
+    const post = await this.postService.getSinglePost(formData);
+    return post;
   }
 
-  @Post('allPosts')
+  @Post("allPosts")
   async getAllPosts(): Promise<{}> {
-     const posts = await this.postService.getAllPosts()
-     return posts;
+    const posts = await this.postService.getAllPosts();
+    return posts;
   }
 
-
-  @Post('createComment')
+  @Post("createComment")
   @FormDataRequest()
   async createComment(@Body() formData: createCommentFormData): Promise<{}> {
-    console.log(formData.userId)
+    console.log(formData.userId);
     const comment = await this.postService.createComment(formData);
     return comment;
   }
+
+  @Post("updateComment")
+  @FormDataRequest() 
+  async updateComment(@Body() formData: updateCommentFormData): Promise<{}> {
+    const comment = await this.postService.updateComment(formData);
+    return comment;
+  }
+
+  @Post("deleteComment")
+  @FormDataRequest()
+  async deleteComment(@Body() formData: deleteCommentFormData): Promise<{}> {
+    const comment = await this.postService.deleteComment(formData);
+    return comment;
+  }
+
+  @Post("toggleCommentLike")
+  @FormDataRequest()
+  async toggleCommentLike(@Body() formData: toggleCommentLikeFormData): Promise<{}> {
+    const comment = await this.postService.toggleCommentLike(formData);
+    return comment;
+  }
+  
 }

@@ -1,4 +1,10 @@
-import { IsString, IsArray, ValidateNested, IsOptional, IsNumber } from "class-validator";
+import {
+  IsString,
+  IsArray,
+  ValidateNested,
+  IsOptional,
+  IsNumber,
+} from "class-validator";
 import { Type } from "class-transformer";
 import { IsFile } from "nestjs-form-data";
 
@@ -81,10 +87,12 @@ export class getPostFormDataDto {
   withImages: string;
 }
 
-
 export class singlePostFormData {
   @IsString()
   postId: string;
+
+  @IsString()
+  userId: string;
 }
 
 export class createCommentFormData {
@@ -100,5 +108,37 @@ export class createCommentFormData {
 
   @IsString()
   userId: string;
-  
+}
+
+export class updateCommentFormData {
+  @IsString()
+  postId: string;
+
+  @IsString()
+  commentId: string;
+
+  @IsString()
+  text: string;
+
+  @IsString()
+  userId: string;
+}
+
+export class deleteCommentFormData {
+  @IsString()
+  postId: string;
+
+  @IsString()
+  commentId: string;
+
+  @IsString()
+  userId: string;
+}
+
+export class toggleCommentLikeFormData {
+  @IsString()
+  commentId: string;
+
+  @IsString()
+  userId: string;
 }
